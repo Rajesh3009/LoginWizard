@@ -57,6 +57,10 @@ class MyHomePage extends ConsumerWidget {
             label: 'Password',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.pin),
+            label: 'PIN',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.info_rounded),
             label: 'About',
           ),
