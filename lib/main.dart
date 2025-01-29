@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loginwizard/views/username_view.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -14,7 +15,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LoginWizard',
       debugShowCheckedModeBanner: false,
-      
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.pink,
@@ -72,8 +72,8 @@ class MyHomePage extends ConsumerWidget {
             label: 'PIN',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.info_rounded),
-            label: 'About',
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
         currentIndex: ref.watch(selectedIndexProvider),
