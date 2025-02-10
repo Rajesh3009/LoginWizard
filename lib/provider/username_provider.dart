@@ -1,18 +1,23 @@
 import 'dart:math';
 
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:word_generator/word_generator.dart';
 
+import '../database/appdatabase.dart';
+
 final usernameProvider = StateNotifierProvider<UsernameProvider, String>((ref) {
-  return UsernameProvider();
+  return UsernameProvider(ref);
 });
 
 class UsernameProvider extends StateNotifier<String> {
-  UsernameProvider() : super('');
+  final Ref ref;
+  UsernameProvider(this.ref) : super('');
 
   generateUsername(String format, int numLen) {
-    final ran = Random();
+    final database = ref.read(databaseProvider);
 
+    final ran = Random();
     final formats = format.split(':');
     var username = '';
     for (var f in formats) {
@@ -23,7 +28,6 @@ class UsernameProvider extends StateNotifier<String> {
           username += ran.nextInt(10).toString();
         }
       } else if (f == 'W') {
-        
         final word = WordGenerator().randomNoun();
         username += word[0].toUpperCase() + word.substring(1);
       } else {
@@ -31,5 +35,7 @@ class UsernameProvider extends StateNotifier<String> {
       }
     }
     state = username;
+    database.into(database.usernameTable).insert(UsernameTableCompanion.insert(
+        username: username, createdAt: Value(DateTime.now())));
   }
 }

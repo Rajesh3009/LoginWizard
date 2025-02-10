@@ -4,6 +4,7 @@ import 'package:loginwizard/utils/conts.dart';
 
 import '../provider/sharedpref_provider.dart';
 import '../provider/username_provider.dart';
+import 'username_history_view.dart';
 
 class UsernameView extends ConsumerStatefulWidget {
   const UsernameView({super.key});
@@ -116,7 +117,9 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
               child: const Text('Generate'),
             ),
             SizedBox(height: 10),
-            ElevatedButton(onPressed: () {}, child: Text('History')),
+            ElevatedButton(onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => UsernameHistory()));
+            }, child: Text('History')),
           ],
         ),
       ),
