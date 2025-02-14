@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loginwizard/utils/conts.dart';
+import 'package:flutter/services.dart';
 
 import '../provider/sharedpref_provider.dart';
 import '../provider/username_provider.dart';
@@ -53,9 +54,23 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   children: [
-                    Expanded(child: SelectableText(username,textAlign: TextAlign.center,)),
+                    Expanded(
+                        child: SelectableText(
+                      username,
+                      textAlign: TextAlign.center,
+                    )),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: username));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Username copied to clipboard'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
                       icon: const Icon(Icons.copy),
                     ),
                   ],
@@ -111,15 +126,20 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
                   prefs.addString('username_format', _formatController.text);
                   ref
                       .read(usernameProvider.notifier)
-                      .generateUsername(_formatController.text,numLen);
+                      .generateUsername(_formatController.text, numLen);
                 }
               },
               child: const Text('Generate'),
             ),
             SizedBox(height: 10),
-            ElevatedButton(onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => UsernameHistory()));
-            }, child: Text('History')),
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => UsernameHistory()));
+                },
+                child: Text('History')),
           ],
         ),
       ),

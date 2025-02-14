@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:loginwizard/views/password_view.dart';
 import 'package:loginwizard/views/username_view.dart';
 
 void main() {
@@ -34,7 +35,7 @@ class MyHomePage extends ConsumerWidget {
 
   final List<Widget> _widgetOptions = <Widget>[
     UsernameView(),
-    Text('Password Page', style: TextStyle(fontSize: 24)),
+    PasswordView(),
     Text('PIN Page', style: TextStyle(fontSize: 24)),
     Text('About Page', style: TextStyle(fontSize: 24)),
   ];
