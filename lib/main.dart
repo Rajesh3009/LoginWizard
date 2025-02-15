@@ -56,9 +56,9 @@ class MyHomePage extends ConsumerWidget {
           }),
       bottomNavigationBar: BottomNavigationBar(
         selectedIconTheme: ThemeData().iconTheme.copyWith(color: Colors.yellow),
-        selectedLabelStyle: TextStyle(color: Colors.yellow),
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
+        selectedItemColor: Colors.yellow,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -78,7 +78,6 @@ class MyHomePage extends ConsumerWidget {
           ),
         ],
         currentIndex: ref.watch(selectedIndexProvider),
-        selectedItemColor: Colors.blue,
         onTap: (index) {
           _pageController.jumpToPage(index);
           ref.read(selectedIndexProvider.notifier).state = index;

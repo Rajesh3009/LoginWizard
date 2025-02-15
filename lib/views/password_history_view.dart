@@ -1,15 +1,15 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:loginwizard/database/appdatabase.dart';
+import 'package:loginwizard/provider/password_provider.dart';
 
-import '../database/appdatabase.dart';
-import '../provider/username_history_provider.dart';
-
-class UsernameHistory extends ConsumerWidget {
-  const UsernameHistory({super.key});
+class PasswordHistoryView extends ConsumerWidget {
+  const PasswordHistoryView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final data = ref.watch(usernameHistoryProvider);
+    final data = ref.watch(passwordHistoryProvider);
     final database = ref.read(databaseProvider);
     return Scaffold(
         appBar: AppBar(
@@ -17,8 +17,8 @@ class UsernameHistory extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {
-                database.deleteAllUsername();
-                ref.invalidate(usernameHistoryProvider);
+                database.deleteAllPassword();
+                ref.invalidate(passwordHistoryProvider);
               },
             )
           ],
@@ -28,13 +28,13 @@ class UsernameHistory extends ConsumerWidget {
             itemCount: data.length,
             itemBuilder: (context, index) {
               return ListTile(
-                title: Text(data[index].username),
+                title: Text(data[index].password),
                 subtitle: Text(data[index].createdAt.toString()),
                 trailing: IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () {
-                    database.deleteUsername(data[index].id);
-                    ref.invalidate(usernameHistoryProvider);
+                    database.deletePassword(data[index].id);
+                    ref.invalidate(passwordHistoryProvider);
                   },
                 ),
               );
@@ -42,7 +42,7 @@ class UsernameHistory extends ConsumerWidget {
           );
         }, error: (error, stack) {
           return Center(
-            child: Text('Error: $error'),
+            child: SelectableText('Error: $error'),
           );
         }, loading: () {
           return const Center(
