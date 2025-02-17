@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class SharedPreferencesHelper {
   final SharedPreferencesAsync asyncPrefs = SharedPreferencesAsync();
 
-  addString(String key, String value) async {
+  storeString(String key, String value) async {
     await asyncPrefs.setString(key, value);
     // print(result);
   }
@@ -18,6 +18,7 @@ class SharedPreferencesHelper {
   }
 
   Future<int?> getInt(String key) async {
-    return await asyncPrefs.getInt(key);
+    final val = await asyncPrefs.getInt(key);
+    return val;
   }
 }

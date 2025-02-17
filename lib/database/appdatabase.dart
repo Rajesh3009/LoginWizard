@@ -21,12 +21,18 @@ class PasswordTable extends Table {
   DateTimeColumn get createdAt => dateTime().nullable()();
 }
 
-@DriftDatabase(tables: [UsernameTable, PasswordTable])
+class PinTable extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get pin => text()();
+  DateTimeColumn get createdAt => dateTime().nullable()();
+}
+
+@DriftDatabase(tables: [UsernameTable, PasswordTable,PinTable])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -70,6 +76,13 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deletePassword(int id) async {
     await (delete(passwordTable)..where((t) => t.id.equals(id))).go();
+  }
+
+  Future<void> deleteAllPin() async {
+    await delete(pinTable).go();
+  }
+  Future<void> deletePin(int id) async {
+    await (delete(pinTable)..where((t) => t.id.equals(id))).go();
   }
 }
 

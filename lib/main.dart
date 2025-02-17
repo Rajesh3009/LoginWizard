@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loginwizard/views/password_view.dart';
 import 'package:loginwizard/views/username_view.dart';
 
+import 'views/pin_view.dart';
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: MyApp()));
@@ -36,7 +38,7 @@ class MyHomePage extends ConsumerWidget {
   final List<Widget> _widgetOptions = <Widget>[
     UsernameView(),
     PasswordView(),
-    Text('PIN Page', style: TextStyle(fontSize: 24)),
+    PinView(),
     Text('About Page', style: TextStyle(fontSize: 24)),
   ];
   final PageController _pageController = PageController();

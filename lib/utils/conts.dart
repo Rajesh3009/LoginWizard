@@ -12,3 +12,5 @@ final passphraseLengthKey='passphrase_length';
 final passphraseSeparatorKey='passphrase_separator';
 final passphraseCapitalizeKey='passphrase_capitalize';
 final passphraseNumbersKey='passphrase_numbers';
+//Pin
+final pinLengthKey='pin_length';

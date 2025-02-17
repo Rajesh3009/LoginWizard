@@ -13,7 +13,11 @@ final passwordProvider = StateNotifierProvider<PasswordProvider, String>((ref) {
 final passwordHistoryProvider =
     FutureProvider.autoDispose<List<PasswordTableData>>((ref) async {
   final database = ref.watch(databaseProvider);
-  return await database.select(database.passwordTable).get();
+  final data = await database
+      .select(database.passwordTable)
+      .get()
+      .then((value) => value.reversed.toList());
+  return data;
 });
 
 class PasswordProvider extends StateNotifier<String> {
@@ -44,8 +48,10 @@ class PasswordProvider extends StateNotifier<String> {
             .join();
 
     state = password;
-    ref.read(databaseProvider).into(ref.read(databaseProvider).passwordTable).insert(
-        PasswordTableCompanion.insert(
+    ref
+        .read(databaseProvider)
+        .into(ref.read(databaseProvider).passwordTable)
+        .insert(PasswordTableCompanion.insert(
             password: state, createdAt: Value(DateTime.now())));
   }
 
@@ -67,8 +73,10 @@ class PasswordProvider extends StateNotifier<String> {
 
     words.shuffle();
     state = words.join(separator);
-    ref.read(databaseProvider).into(ref.read(databaseProvider).passwordTable).insert(
-        PasswordTableCompanion.insert(
+    ref
+        .read(databaseProvider)
+        .into(ref.read(databaseProvider).passwordTable)
+        .insert(PasswordTableCompanion.insert(
             password: state, createdAt: Value(DateTime.now())));
   }
 }

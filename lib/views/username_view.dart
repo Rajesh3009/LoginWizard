@@ -99,7 +99,10 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
             SizedBox(height: 10),
             Text('W=Word, w = word, n = number'),
             SizedBox(height: 10),
-            Row(
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              
               children: [
                 Text('Length of the number: '),
                 DropdownButton<int>(
@@ -123,7 +126,7 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
             ElevatedButton(
               onPressed: () {
                 if (_formKey.currentState?.validate() != null) {
-                  prefs.addString('username_format', _formatController.text);
+                  prefs.storeString('username_format', _formatController.text);
                   ref
                       .read(usernameProvider.notifier)
                       .generateUsername(_formatController.text, numLen);
