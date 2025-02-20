@@ -1,6 +1,6 @@
 # LoginWizard
 
-![App Logo](assets\loginwizard.png)
+![App Logo](assets/oginwizard.png)
 
 A Flutter application that helps generate secure usernames, passwords, and PINs.
 
