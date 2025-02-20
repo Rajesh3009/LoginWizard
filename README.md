@@ -1,6 +1,6 @@
 # LoginWizard
 
-![App Logo](assets/loginwizard.png)
+<img src="assets/loginwizard.png" alt="App Logo" width="200"/>
 
 A Flutter application that helps generate secure usernames, passwords, and PINs.
 
