@@ -30,6 +30,15 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            storeFile file("key.properties") // Use the key.properties file
+            storePassword storePassword
+            keyAlias keyAlias
+            keyPassword keyPassword
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
