@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loginwizard/database/appdatabase.dart';
 import 'package:loginwizard/provider/pin_provider.dart';
+import 'package:loginwizard/widgets/history_list_tile.dart';
 
 class PinHistoryView extends ConsumerWidget {
   const PinHistoryView({super.key});
@@ -17,7 +18,7 @@ class PinHistoryView extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {
-                database.deleteAllPassword();
+                database.deleteAllPin(); // Fix: Call deleteAllPin
                 ref.invalidate(pinHistoryProvider);
               },
             )
@@ -27,16 +28,16 @@ class PinHistoryView extends ConsumerWidget {
           return ListView.builder(
             itemCount: data.length,
             itemBuilder: (context, index) {
-              return ListTile(
-                title: Text(data[index].pin),
-                subtitle: Text(data[index].createdAt.toString()),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    database.deletePassword(data[index].id);
-                    ref.invalidate(pinHistoryProvider);
-                  },
-                ),
+              final item = data[index];
+              return HistoryListTile(
+                password: item.pin, // Use pin for password parameter
+                createdAt: item.createdAt!,
+                id: item.id,
+                ref: ref,
+                provider: pinHistoryProvider, // Pass the provider object
+                deleteItemAction: (id) { // Pass the delete action
+                  database.deletePin(id); // Fix: Call deletePin
+                },
               );
             },
           );
