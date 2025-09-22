@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:loginwizard/provider/password_provider.dart';
-import 'package:loginwizard/database/appdatabase.dart';
 
 class HistoryListTile extends StatefulWidget {
   final String password;
@@ -13,14 +11,14 @@ class HistoryListTile extends StatefulWidget {
   final Function(int id) deleteItemAction; // Add deleteItemAction parameter
 
   const HistoryListTile({
-    Key? key,
+    super.key,
     required this.password,
     required this.createdAt,
     required this.id,
     required this.ref,
     required this.provider,
     required this.deleteItemAction, // Require deleteItemAction
-  }) : super(key: key);
+  });
 
   @override
   State<HistoryListTile> createState() => _HistoryListTileState();
