@@ -14,7 +14,7 @@ class UsernameProvider extends StateNotifier<String> {
   final Ref ref;
   UsernameProvider(this.ref) : super('');
 
-  generateUsername(String format, int numLen) {
+  void generateUsername(String format, int numLen) {
     final database = ref.read(databaseProvider);
 
     final ran = Random();
