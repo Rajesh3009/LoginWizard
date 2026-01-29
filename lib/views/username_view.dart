@@ -77,6 +77,13 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
                 ),
               ),
             ),
+            if (username.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Length: ${username.length}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
             SizedBox(height: 10),
             Text('Specify the format of the username'),
             SizedBox(height: 10),
@@ -102,7 +109,6 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
             Wrap(
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
-              
               children: [
                 Text('Length of the number: '),
                 DropdownButton<int>(

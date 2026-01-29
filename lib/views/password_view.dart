@@ -59,8 +59,7 @@ class _PasswordViewState extends ConsumerState<PasswordView>
                     )),
                     IconButton(
                       onPressed: () async {
-                        await Clipboard.setData(
-                            ClipboardData(text: password));
+                        await Clipboard.setData(ClipboardData(text: password));
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -76,6 +75,13 @@ class _PasswordViewState extends ConsumerState<PasswordView>
                 ),
               ),
             ),
+            if (password.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Length: ${password.length}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
             TabBar(
               controller: _tabController,
               tabs: const [
