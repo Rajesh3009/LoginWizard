@@ -11,9 +11,8 @@ Write-Host "Detected App Name: $appName"
 Write-Host "Detected Version: $version"
 
 # Create output directory
-$outputDir = Join-Path (Get-Location) "build\final_releases"
+$outputDir = Join-Path (Get-Location) "releases"
 if (!(Test-Path $outputDir)) {
-    if (!(Test-Path "build")) { New-Item -ItemType Directory -Path "build" }
     New-Item -ItemType Directory -Path $outputDir
 }
 
@@ -55,6 +54,19 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "SUCCESS: Windows ZIP created at $zipPath"
 } else {
     Write-Host "ERROR: Windows build failed" -ForegroundColor Red
+}
+
+# 4. Build Windows Installer
+Write-Host "--- Building Windows Installer ---"
+dart run inno_bundle:build --release
+if ($LASTEXITCODE -eq 0) {
+    $installerSourceDir = "build\windows\x64\installer\release"
+    Get-ChildItem -Path $installerSourceDir -Filter "*.exe" | ForEach-Object {
+        Copy-Item $_.FullName "$outputDir\${appName}_${version}_Installer.exe"
+        Write-Host "SUCCESS: Windows Installer copied to $outputDir"
+    }
+} else {
+    Write-Host "ERROR: Windows Installer build failed" -ForegroundColor Red
 }
 
 Write-Host "`nAll tasks attempted. Check $outputDir for results."
