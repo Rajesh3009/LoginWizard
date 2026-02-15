@@ -58,7 +58,7 @@ if ($LASTEXITCODE -eq 0) {
 
 # 4. Build Windows Installer
 Write-Host "--- Building Windows Installer ---"
-dart run inno_bundle:build --release
+dart run inno_bundle --release
 if ($LASTEXITCODE -eq 0) {
     $installerSourceDir = "build\windows\x64\installer\release"
     Get-ChildItem -Path $installerSourceDir -Filter "*.exe" | ForEach-Object {
