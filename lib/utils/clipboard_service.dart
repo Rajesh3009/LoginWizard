@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'conts.dart';
+import 'constants.dart';
 
 class ClipboardService {
   static Timer? _clearTimer;

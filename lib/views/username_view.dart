@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../provider/username_provider.dart';
-import '../utils/clipboard_service.dart';
+import '../widgets/credential_display_card.dart';
+import '../widgets/pattern_blocks_card.dart';
+import '../widgets/token_palette.dart';
 import 'username_history_view.dart';
 
+/// Screen for generating usernames using customizable pattern blocks and presets
 class UsernameView extends ConsumerStatefulWidget {
   const UsernameView({super.key});
 
@@ -92,52 +95,15 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Result Display Card
-            Card(
-              elevation: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SelectableText(
-                            username.isEmpty ? 'Tap Generate to create username' : username,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                              color: username.isEmpty ? Colors.grey : null,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.copy),
-                          tooltip: 'Copy to clipboard',
-                          onPressed: username.isEmpty
-                              ? null
-                              : () => ClipboardService.copyToClipboard(
-                                    context,
-                                    username,
-                                    itemType: 'Username',
-                                  ),
-                        ),
-                      ],
-                    ),
-                    if (username.isNotEmpty) ...[
-                      const Divider(height: 12),
-                      Text(
-                        'Length: ${username.length} characters',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+            // Generated Result Display Card
+            CredentialDisplayCard(
+              text: username,
+              itemType: 'Username',
+              hintText: 'Tap Generate to create username',
             ),
             const SizedBox(height: 10),
+
+            // Main Generate Action Button
             ElevatedButton.icon(
               icon: const Icon(Icons.refresh),
               label: const Text('Generate Username', style: TextStyle(fontSize: 16)),
@@ -175,127 +141,16 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
             ),
             const SizedBox(height: 14),
 
-            // Active Pattern Blocks Box
-            Card(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(120),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Pattern Blocks Sequence:',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        if (_tokens.isNotEmpty)
-                          TextButton(
-                            onPressed: () => setState(() => _tokens.clear()),
-                            child: const Text('Clear All', style: TextStyle(color: Colors.redAccent)),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (_tokens.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16.0),
-                        child: Center(
-                          child: Text(
-                            'No blocks added. Tap chips below to build pattern.',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: List.generate(_tokens.length, (index) {
-                          final token = _tokens[index];
-                          Color chipColor;
-                          switch (token.type) {
-                            case PatternTokenType.adjective:
-                              chipColor = Colors.teal.withAlpha(60);
-                              break;
-                            case PatternTokenType.noun:
-                              chipColor = Colors.indigo.withAlpha(60);
-                              break;
-                            case PatternTokenType.number:
-                              chipColor = Colors.amber.withAlpha(60);
-                              break;
-                            case PatternTokenType.year:
-                              chipColor = Colors.deepOrange.withAlpha(60);
-                              break;
-                            case PatternTokenType.separator:
-                              chipColor = Colors.purple.withAlpha(60);
-                              break;
-                          }
-
-                          return Chip(
-                            backgroundColor: chipColor,
-                            label: Text(token.label),
-                            deleteIcon: const Icon(Icons.close, size: 18),
-                            onDeleted: () => _removeToken(index),
-                          );
-                        }),
-                      ),
-                  ],
-                ),
-              ),
+            // Pattern Blocks Display Card
+            PatternBlocksCard(
+              tokens: _tokens,
+              onRemoveToken: _removeToken,
+              onClearAll: () => setState(() => _tokens.clear()),
             ),
             const SizedBox(height: 12),
 
-            // Block Palette (Add Blocks)
-            const Text('Add Pattern Blocks:', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('Adjective'),
-                  onPressed: () => _addToken(PatternTokenType.adjective),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('Noun'),
-                  onPressed: () => _addToken(PatternTokenType.noun),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('2-Digit Num'),
-                  onPressed: () => _addToken(PatternTokenType.number, '2'),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('3-Digit Num'),
-                  onPressed: () => _addToken(PatternTokenType.number, '3'),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('Year'),
-                  onPressed: () => _addToken(PatternTokenType.year),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('Separator (_)'),
-                  onPressed: () => _addToken(PatternTokenType.separator, '_'),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('Separator (.)'),
-                  onPressed: () => _addToken(PatternTokenType.separator, '.'),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('Separator (-)'),
-                  onPressed: () => _addToken(PatternTokenType.separator, '-'),
-                ),
-              ],
-            ),
+            // Token Palette Chips
+            TokenPalette(onAddToken: _addToken),
             const SizedBox(height: 14),
 
             // Casing Options
@@ -329,6 +184,7 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
               ],
             ),
             const SizedBox(height: 20),
+
             OutlinedButton.icon(
               icon: const Icon(Icons.history),
               label: const Text('View Username History'),

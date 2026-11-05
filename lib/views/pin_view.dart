@@ -4,10 +4,13 @@ import 'package:loginwizard/provider/pin_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/clipboard_service.dart';
-import '../utils/conts.dart';
+import '../utils/constants.dart';
 import '../utils/security_utils.dart';
+import '../widgets/credential_display_card.dart';
+import '../widgets/pin_options_card.dart';
 import 'pin_history_view.dart';
 
+/// Screen for generating arbitrary-length numeric and alphanumeric PINs
 class PinView extends ConsumerStatefulWidget {
   const PinView({super.key});
 
@@ -75,71 +78,35 @@ class _PinViewState extends ConsumerState<PinView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Result Display Card
-            Card(
-              elevation: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SelectableText(
-                            formattedPin.isEmpty ? 'Tap Generate to create PIN' : formattedPin,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 3,
-                              color: formattedPin.isEmpty ? Colors.grey : null,
-                            ),
-                          ),
+            // Generated Result Display Card
+            CredentialDisplayCard(
+              text: formattedPin,
+              itemType: 'PIN',
+              hintText: 'Tap Generate to create PIN',
+              letterSpacing: 3.0,
+              fontSize: 22.0,
+              bottomWidget: (_chunkFormat && formattedPin != pin)
+                  ? Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.copy),
-                          tooltip: 'Copy PIN',
-                          onPressed: pin.isEmpty
-                              ? null
-                              : () => ClipboardService.copyToClipboard(
-                                    context,
-                                    formattedPin,
-                                    itemType: 'PIN',
-                                  ),
+                        icon: const Icon(Icons.content_copy, size: 14),
+                        label: const Text('Copy Unformatted', style: TextStyle(fontSize: 12)),
+                        onPressed: () => ClipboardService.copyToClipboard(
+                          context,
+                          pin,
+                          itemType: 'Raw PIN',
                         ),
-                      ],
-                    ),
-                    if (pin.isNotEmpty) ...[
-                      const Divider(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Length: ${pin.length} digits',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          if (_chunkFormat && formattedPin != pin)
-                            TextButton.icon(
-                              style: TextButton.styleFrom(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                              ),
-                              icon: const Icon(Icons.content_copy, size: 14),
-                              label: const Text('Copy Unformatted', style: TextStyle(fontSize: 12)),
-                              onPressed: () => ClipboardService.copyToClipboard(
-                                context,
-                                pin,
-                                itemType: 'Raw PIN',
-                              ),
-                            ),
-                        ],
                       ),
-                    ],
-                  ],
-                ),
-              ),
+                    )
+                  : null,
             ),
             const SizedBox(height: 10),
+
+            // Main Generate Action Button
             ElevatedButton.icon(
               icon: const Icon(Icons.refresh),
               label: const Text('Generate PIN', style: TextStyle(fontSize: 16)),
@@ -165,81 +132,36 @@ class _PinViewState extends ConsumerState<PinView> {
               divisions: 29,
               label: '$_pinLength',
               onChanged: (val) {
-                setState(() {
-                  _pinLength = val.toInt();
-                });
+                setState(() => _pinLength = val.toInt());
                 _saveValues();
               },
             ),
             const SizedBox(height: 10),
 
-            // Toggles
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                child: Column(
-                  children: [
-                    SwitchListTile(
-                      title: const Text('Avoid Weak Patterns'),
-                      subtitle: const Text('Rejects repeating digits (0000), sequences (1234), and common PINs'),
-                      value: _avoidPatterns,
-                      onChanged: (val) {
-                        setState(() => _avoidPatterns = val);
-                        _saveValues();
-                      },
-                    ),
-                    const Divider(height: 1),
-                    SwitchListTile(
-                      title: const Text('Alphanumeric PIN'),
-                      subtitle: const Text('Include uppercase letters (A-Z) in addition to digits'),
-                      value: _alphanumeric,
-                      onChanged: (val) {
-                        setState(() => _alphanumeric = val);
-                        _saveValues();
-                      },
-                    ),
-                    const Divider(height: 1),
-                    SwitchListTile(
-                      title: const Text('Chunk Formatting'),
-                      subtitle: Text('Group digits with hyphens (e.g. ${_chunkSize == 3 ? "123-456" : "1234-5678"})'),
-                      value: _chunkFormat,
-                      onChanged: (val) {
-                        setState(() => _chunkFormat = val);
-                        _saveValues();
-                      },
-                    ),
-                    if (_chunkFormat) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                        child: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: 10,
-                          runSpacing: 6,
-                          children: [
-                            const Text('Chunk size:'),
-                            ChoiceChip(
-                              label: const Text('3 digits'),
-                              selected: _chunkSize == 3,
-                              onSelected: (val) {
-                                if (val) setState(() => _chunkSize = 3);
-                              },
-                            ),
-                            ChoiceChip(
-                              label: const Text('4 digits'),
-                              selected: _chunkSize == 4,
-                              onSelected: (val) {
-                                if (val) setState(() => _chunkSize = 4);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+            // PIN Options Card
+            PinOptionsCard(
+              avoidPatterns: _avoidPatterns,
+              alphanumeric: _alphanumeric,
+              chunkFormat: _chunkFormat,
+              chunkSize: _chunkSize,
+              onAvoidPatternsChanged: (val) {
+                setState(() => _avoidPatterns = val);
+                _saveValues();
+              },
+              onAlphanumericChanged: (val) {
+                setState(() => _alphanumeric = val);
+                _saveValues();
+              },
+              onChunkFormatChanged: (val) {
+                setState(() => _chunkFormat = val);
+                _saveValues();
+              },
+              onChunkSizeChanged: (val) {
+                setState(() => _chunkSize = val);
+              },
             ),
             const SizedBox(height: 20),
+
             OutlinedButton.icon(
               icon: const Icon(Icons.history),
               label: const Text('View PIN History'),

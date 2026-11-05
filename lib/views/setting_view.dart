@@ -7,7 +7,7 @@ import '../provider/password_provider.dart';
 import '../provider/pin_provider.dart';
 import '../provider/theme_provider.dart';
 import '../provider/username_history_provider.dart';
-import '../utils/conts.dart';
+import '../utils/constants.dart';
 
 class SettingView extends ConsumerStatefulWidget {
   const SettingView({super.key});

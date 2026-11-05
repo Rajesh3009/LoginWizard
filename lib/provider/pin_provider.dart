@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loginwizard/database/appdatabase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../utils/conts.dart';
+import '../utils/constants.dart';
 import '../utils/security_utils.dart';
 
 final pinProvider = StateNotifierProvider<PinNotifier, String>((ref) {
