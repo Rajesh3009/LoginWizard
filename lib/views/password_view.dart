@@ -221,7 +221,19 @@ class _PasswordViewState extends ConsumerState<PasswordView>
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: Text(
+                _tabController.index == 0 ? 'Generate Password' : 'Generate Passphrase',
+                style: const TextStyle(fontSize: 16),
+              ),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: _generate,
+            ),
+            const SizedBox(height: 14),
 
             // Tabs for Password vs Passphrase
             TabBar(
@@ -238,15 +250,6 @@ class _PasswordViewState extends ConsumerState<PasswordView>
             if (_tabController.index == 0) _passwordBuilder() else _passphraseBuilder(),
 
             const SizedBox(height: 16),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.refresh),
-              label: const Text('Generate Password', style: TextStyle(fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              onPressed: _generate,
-            ),
-            const SizedBox(height: 8),
             OutlinedButton.icon(
               icon: const Icon(Icons.history),
               label: const Text('View Password History'),

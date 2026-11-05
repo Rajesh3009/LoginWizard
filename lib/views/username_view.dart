@@ -137,6 +137,15 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: const Text('Generate Username', style: TextStyle(fontSize: 16)),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: _tokens.isEmpty ? null : _generate,
+            ),
             const SizedBox(height: 14),
 
             // Quick Presets
@@ -320,17 +329,6 @@ class _UsernameViewState extends ConsumerState<UsernameView> {
               ],
             ),
             const SizedBox(height: 20),
-
-            // Action Buttons
-            ElevatedButton.icon(
-              icon: const Icon(Icons.refresh),
-              label: const Text('Generate Username', style: TextStyle(fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              onPressed: _tokens.isEmpty ? null : _generate,
-            ),
-            const SizedBox(height: 8),
             OutlinedButton.icon(
               icon: const Icon(Icons.history),
               label: const Text('View Username History'),

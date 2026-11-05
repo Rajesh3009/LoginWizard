@@ -139,6 +139,15 @@ class _PinViewState extends ConsumerState<PinView> {
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: const Text('Generate PIN', style: TextStyle(fontSize: 16)),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              onPressed: _generate,
+            ),
             const SizedBox(height: 14),
 
             // PIN Length Slider
@@ -231,17 +240,6 @@ class _PinViewState extends ConsumerState<PinView> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Action Buttons
-            ElevatedButton.icon(
-              icon: const Icon(Icons.refresh),
-              label: const Text('Generate PIN', style: TextStyle(fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-              onPressed: _generate,
-            ),
-            const SizedBox(height: 8),
             OutlinedButton.icon(
               icon: const Icon(Icons.history),
               label: const Text('View PIN History'),
