@@ -1,8 +1,10 @@
-import 'dart:math';
-
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loginwizard/database/appdatabase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../utils/conts.dart';
+import '../utils/security_utils.dart';
 
 final pinProvider = StateNotifierProvider<PinNotifier, String>((ref) {
   return PinNotifier(ref);
@@ -21,14 +23,34 @@ final pinHistoryProvider =
 class PinNotifier extends StateNotifier<String> {
   PinNotifier(this.ref) : super('');
   final Ref ref;
+  final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
 
-  void generatePin(int length) {
-    final pin = Random()
-        .nextInt(pow(10, length).toInt())
-        .toString()
-        .padLeft(length, '0');
+  Future<void> generatePin({
+    required int length,
+    bool alphanumeric = false,
+    bool avoidPatterns = false,
+  }) async {
+    final pin = SecurityUtils.generatePin(
+      length: length,
+      alphanumeric: alphanumeric,
+      avoidPatterns: avoidPatterns,
+    );
+
     state = pin;
-    ref.read(databaseProvider).into(ref.read(databaseProvider).pinTable).insert(
-        PinTableCompanion.insert(pin: pin, createdAt: Value(DateTime.now())));
+
+    if (pin.isNotEmpty) {
+      final autoSave = await _prefs.getBool(autoSaveHistoryKey) ?? true;
+      if (autoSave) {
+        final db = ref.read(databaseProvider);
+        await db.into(db.pinTable).insert(
+              PinTableCompanion.insert(
+                pin: pin,
+                createdAt: Value(DateTime.now()),
+                isFavorite: const Value(false),
+              ),
+            );
+        ref.invalidate(pinHistoryProvider);
+      }
+    }
   }
 }

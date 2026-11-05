@@ -30,8 +30,18 @@ class $UsernameTableTable extends UsernameTable
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _isFavoriteMeta =
+      const VerificationMeta('isFavorite');
   @override
-  List<GeneratedColumn> get $columns => [id, username, createdAt];
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+      'is_favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [id, username, createdAt, isFavorite];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -55,6 +65,12 @@ class $UsernameTableTable extends UsernameTable
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+          _isFavoriteMeta,
+          isFavorite.isAcceptableOrUnknown(
+              data['is_favorite']!, _isFavoriteMeta));
+    }
     return context;
   }
 
@@ -70,6 +86,8 @@ class $UsernameTableTable extends UsernameTable
           .read(DriftSqlType.string, data['${effectivePrefix}username'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      isFavorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_favorite'])!,
     );
   }
 
@@ -84,8 +102,12 @@ class UsernameTableData extends DataClass
   final int id;
   final String username;
   final DateTime? createdAt;
+  final bool isFavorite;
   const UsernameTableData(
-      {required this.id, required this.username, this.createdAt});
+      {required this.id,
+      required this.username,
+      this.createdAt,
+      required this.isFavorite});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -94,6 +116,7 @@ class UsernameTableData extends DataClass
     if (!nullToAbsent || createdAt != null) {
       map['created_at'] = Variable<DateTime>(createdAt);
     }
+    map['is_favorite'] = Variable<bool>(isFavorite);
     return map;
   }
 
@@ -104,6 +127,7 @@ class UsernameTableData extends DataClass
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
           : Value(createdAt),
+      isFavorite: Value(isFavorite),
     );
   }
 
@@ -114,6 +138,7 @@ class UsernameTableData extends DataClass
       id: serializer.fromJson<int>(json['id']),
       username: serializer.fromJson<String>(json['username']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
     );
   }
   @override
@@ -123,23 +148,28 @@ class UsernameTableData extends DataClass
       'id': serializer.toJson<int>(id),
       'username': serializer.toJson<String>(username),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
     };
   }
 
   UsernameTableData copyWith(
           {int? id,
           String? username,
-          Value<DateTime?> createdAt = const Value.absent()}) =>
+          Value<DateTime?> createdAt = const Value.absent(),
+          bool? isFavorite}) =>
       UsernameTableData(
         id: id ?? this.id,
         username: username ?? this.username,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        isFavorite: isFavorite ?? this.isFavorite,
       );
   UsernameTableData copyWithCompanion(UsernameTableCompanion data) {
     return UsernameTableData(
       id: data.id.present ? data.id.value : this.id,
       username: data.username.present ? data.username.value : this.username,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      isFavorite:
+          data.isFavorite.present ? data.isFavorite.value : this.isFavorite,
     );
   }
 
@@ -148,54 +178,65 @@ class UsernameTableData extends DataClass
     return (StringBuffer('UsernameTableData(')
           ..write('id: $id, ')
           ..write('username: $username, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, username, createdAt);
+  int get hashCode => Object.hash(id, username, createdAt, isFavorite);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is UsernameTableData &&
           other.id == this.id &&
           other.username == this.username &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.isFavorite == this.isFavorite);
 }
 
 class UsernameTableCompanion extends UpdateCompanion<UsernameTableData> {
   final Value<int> id;
   final Value<String> username;
   final Value<DateTime?> createdAt;
+  final Value<bool> isFavorite;
   const UsernameTableCompanion({
     this.id = const Value.absent(),
     this.username = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   });
   UsernameTableCompanion.insert({
     this.id = const Value.absent(),
     required String username,
     this.createdAt = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   }) : username = Value(username);
   static Insertable<UsernameTableData> custom({
     Expression<int>? id,
     Expression<String>? username,
     Expression<DateTime>? createdAt,
+    Expression<bool>? isFavorite,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (username != null) 'username': username,
       if (createdAt != null) 'created_at': createdAt,
+      if (isFavorite != null) 'is_favorite': isFavorite,
     });
   }
 
   UsernameTableCompanion copyWith(
-      {Value<int>? id, Value<String>? username, Value<DateTime?>? createdAt}) {
+      {Value<int>? id,
+      Value<String>? username,
+      Value<DateTime?>? createdAt,
+      Value<bool>? isFavorite}) {
     return UsernameTableCompanion(
       id: id ?? this.id,
       username: username ?? this.username,
       createdAt: createdAt ?? this.createdAt,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 
@@ -211,6 +252,9 @@ class UsernameTableCompanion extends UpdateCompanion<UsernameTableData> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
     return map;
   }
 
@@ -219,7 +263,8 @@ class UsernameTableCompanion extends UpdateCompanion<UsernameTableData> {
     return (StringBuffer('UsernameTableCompanion(')
           ..write('id: $id, ')
           ..write('username: $username, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
@@ -252,8 +297,18 @@ class $PasswordTableTable extends PasswordTable
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _isFavoriteMeta =
+      const VerificationMeta('isFavorite');
   @override
-  List<GeneratedColumn> get $columns => [id, password, createdAt];
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+      'is_favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [id, password, createdAt, isFavorite];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -277,6 +332,12 @@ class $PasswordTableTable extends PasswordTable
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+          _isFavoriteMeta,
+          isFavorite.isAcceptableOrUnknown(
+              data['is_favorite']!, _isFavoriteMeta));
+    }
     return context;
   }
 
@@ -292,6 +353,8 @@ class $PasswordTableTable extends PasswordTable
           .read(DriftSqlType.string, data['${effectivePrefix}password'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      isFavorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_favorite'])!,
     );
   }
 
@@ -306,8 +369,12 @@ class PasswordTableData extends DataClass
   final int id;
   final String password;
   final DateTime? createdAt;
+  final bool isFavorite;
   const PasswordTableData(
-      {required this.id, required this.password, this.createdAt});
+      {required this.id,
+      required this.password,
+      this.createdAt,
+      required this.isFavorite});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -316,6 +383,7 @@ class PasswordTableData extends DataClass
     if (!nullToAbsent || createdAt != null) {
       map['created_at'] = Variable<DateTime>(createdAt);
     }
+    map['is_favorite'] = Variable<bool>(isFavorite);
     return map;
   }
 
@@ -326,6 +394,7 @@ class PasswordTableData extends DataClass
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
           : Value(createdAt),
+      isFavorite: Value(isFavorite),
     );
   }
 
@@ -336,6 +405,7 @@ class PasswordTableData extends DataClass
       id: serializer.fromJson<int>(json['id']),
       password: serializer.fromJson<String>(json['password']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
     );
   }
   @override
@@ -345,23 +415,28 @@ class PasswordTableData extends DataClass
       'id': serializer.toJson<int>(id),
       'password': serializer.toJson<String>(password),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
     };
   }
 
   PasswordTableData copyWith(
           {int? id,
           String? password,
-          Value<DateTime?> createdAt = const Value.absent()}) =>
+          Value<DateTime?> createdAt = const Value.absent(),
+          bool? isFavorite}) =>
       PasswordTableData(
         id: id ?? this.id,
         password: password ?? this.password,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        isFavorite: isFavorite ?? this.isFavorite,
       );
   PasswordTableData copyWithCompanion(PasswordTableCompanion data) {
     return PasswordTableData(
       id: data.id.present ? data.id.value : this.id,
       password: data.password.present ? data.password.value : this.password,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      isFavorite:
+          data.isFavorite.present ? data.isFavorite.value : this.isFavorite,
     );
   }
 
@@ -370,54 +445,65 @@ class PasswordTableData extends DataClass
     return (StringBuffer('PasswordTableData(')
           ..write('id: $id, ')
           ..write('password: $password, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, password, createdAt);
+  int get hashCode => Object.hash(id, password, createdAt, isFavorite);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is PasswordTableData &&
           other.id == this.id &&
           other.password == this.password &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.isFavorite == this.isFavorite);
 }
 
 class PasswordTableCompanion extends UpdateCompanion<PasswordTableData> {
   final Value<int> id;
   final Value<String> password;
   final Value<DateTime?> createdAt;
+  final Value<bool> isFavorite;
   const PasswordTableCompanion({
     this.id = const Value.absent(),
     this.password = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   });
   PasswordTableCompanion.insert({
     this.id = const Value.absent(),
     required String password,
     this.createdAt = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   }) : password = Value(password);
   static Insertable<PasswordTableData> custom({
     Expression<int>? id,
     Expression<String>? password,
     Expression<DateTime>? createdAt,
+    Expression<bool>? isFavorite,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (password != null) 'password': password,
       if (createdAt != null) 'created_at': createdAt,
+      if (isFavorite != null) 'is_favorite': isFavorite,
     });
   }
 
   PasswordTableCompanion copyWith(
-      {Value<int>? id, Value<String>? password, Value<DateTime?>? createdAt}) {
+      {Value<int>? id,
+      Value<String>? password,
+      Value<DateTime?>? createdAt,
+      Value<bool>? isFavorite}) {
     return PasswordTableCompanion(
       id: id ?? this.id,
       password: password ?? this.password,
       createdAt: createdAt ?? this.createdAt,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 
@@ -433,6 +519,9 @@ class PasswordTableCompanion extends UpdateCompanion<PasswordTableData> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
     return map;
   }
 
@@ -441,7 +530,8 @@ class PasswordTableCompanion extends UpdateCompanion<PasswordTableData> {
     return (StringBuffer('PasswordTableCompanion(')
           ..write('id: $id, ')
           ..write('password: $password, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
@@ -473,8 +563,18 @@ class $PinTableTable extends PinTable
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
       'created_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _isFavoriteMeta =
+      const VerificationMeta('isFavorite');
   @override
-  List<GeneratedColumn> get $columns => [id, pin, createdAt];
+  late final GeneratedColumn<bool> isFavorite = GeneratedColumn<bool>(
+      'is_favorite', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_favorite" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [id, pin, createdAt, isFavorite];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -498,6 +598,12 @@ class $PinTableTable extends PinTable
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     }
+    if (data.containsKey('is_favorite')) {
+      context.handle(
+          _isFavoriteMeta,
+          isFavorite.isAcceptableOrUnknown(
+              data['is_favorite']!, _isFavoriteMeta));
+    }
     return context;
   }
 
@@ -513,6 +619,8 @@ class $PinTableTable extends PinTable
           .read(DriftSqlType.string, data['${effectivePrefix}pin'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      isFavorite: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_favorite'])!,
     );
   }
 
@@ -526,7 +634,12 @@ class PinTableData extends DataClass implements Insertable<PinTableData> {
   final int id;
   final String pin;
   final DateTime? createdAt;
-  const PinTableData({required this.id, required this.pin, this.createdAt});
+  final bool isFavorite;
+  const PinTableData(
+      {required this.id,
+      required this.pin,
+      this.createdAt,
+      required this.isFavorite});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -535,6 +648,7 @@ class PinTableData extends DataClass implements Insertable<PinTableData> {
     if (!nullToAbsent || createdAt != null) {
       map['created_at'] = Variable<DateTime>(createdAt);
     }
+    map['is_favorite'] = Variable<bool>(isFavorite);
     return map;
   }
 
@@ -545,6 +659,7 @@ class PinTableData extends DataClass implements Insertable<PinTableData> {
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
           : Value(createdAt),
+      isFavorite: Value(isFavorite),
     );
   }
 
@@ -555,6 +670,7 @@ class PinTableData extends DataClass implements Insertable<PinTableData> {
       id: serializer.fromJson<int>(json['id']),
       pin: serializer.fromJson<String>(json['pin']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      isFavorite: serializer.fromJson<bool>(json['isFavorite']),
     );
   }
   @override
@@ -564,23 +680,28 @@ class PinTableData extends DataClass implements Insertable<PinTableData> {
       'id': serializer.toJson<int>(id),
       'pin': serializer.toJson<String>(pin),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'isFavorite': serializer.toJson<bool>(isFavorite),
     };
   }
 
   PinTableData copyWith(
           {int? id,
           String? pin,
-          Value<DateTime?> createdAt = const Value.absent()}) =>
+          Value<DateTime?> createdAt = const Value.absent(),
+          bool? isFavorite}) =>
       PinTableData(
         id: id ?? this.id,
         pin: pin ?? this.pin,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        isFavorite: isFavorite ?? this.isFavorite,
       );
   PinTableData copyWithCompanion(PinTableCompanion data) {
     return PinTableData(
       id: data.id.present ? data.id.value : this.id,
       pin: data.pin.present ? data.pin.value : this.pin,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      isFavorite:
+          data.isFavorite.present ? data.isFavorite.value : this.isFavorite,
     );
   }
 
@@ -589,54 +710,65 @@ class PinTableData extends DataClass implements Insertable<PinTableData> {
     return (StringBuffer('PinTableData(')
           ..write('id: $id, ')
           ..write('pin: $pin, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, pin, createdAt);
+  int get hashCode => Object.hash(id, pin, createdAt, isFavorite);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is PinTableData &&
           other.id == this.id &&
           other.pin == this.pin &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.isFavorite == this.isFavorite);
 }
 
 class PinTableCompanion extends UpdateCompanion<PinTableData> {
   final Value<int> id;
   final Value<String> pin;
   final Value<DateTime?> createdAt;
+  final Value<bool> isFavorite;
   const PinTableCompanion({
     this.id = const Value.absent(),
     this.pin = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   });
   PinTableCompanion.insert({
     this.id = const Value.absent(),
     required String pin,
     this.createdAt = const Value.absent(),
+    this.isFavorite = const Value.absent(),
   }) : pin = Value(pin);
   static Insertable<PinTableData> custom({
     Expression<int>? id,
     Expression<String>? pin,
     Expression<DateTime>? createdAt,
+    Expression<bool>? isFavorite,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (pin != null) 'pin': pin,
       if (createdAt != null) 'created_at': createdAt,
+      if (isFavorite != null) 'is_favorite': isFavorite,
     });
   }
 
   PinTableCompanion copyWith(
-      {Value<int>? id, Value<String>? pin, Value<DateTime?>? createdAt}) {
+      {Value<int>? id,
+      Value<String>? pin,
+      Value<DateTime?>? createdAt,
+      Value<bool>? isFavorite}) {
     return PinTableCompanion(
       id: id ?? this.id,
       pin: pin ?? this.pin,
       createdAt: createdAt ?? this.createdAt,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 
@@ -652,6 +784,9 @@ class PinTableCompanion extends UpdateCompanion<PinTableData> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (isFavorite.present) {
+      map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
     return map;
   }
 
@@ -660,7 +795,8 @@ class PinTableCompanion extends UpdateCompanion<PinTableData> {
     return (StringBuffer('PinTableCompanion(')
           ..write('id: $id, ')
           ..write('pin: $pin, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('isFavorite: $isFavorite')
           ..write(')'))
         .toString();
   }
@@ -685,12 +821,14 @@ typedef $$UsernameTableTableCreateCompanionBuilder = UsernameTableCompanion
   Value<int> id,
   required String username,
   Value<DateTime?> createdAt,
+  Value<bool> isFavorite,
 });
 typedef $$UsernameTableTableUpdateCompanionBuilder = UsernameTableCompanion
     Function({
   Value<int> id,
   Value<String> username,
   Value<DateTime?> createdAt,
+  Value<bool> isFavorite,
 });
 
 class $$UsernameTableTableFilterComposer
@@ -710,6 +848,9 @@ class $$UsernameTableTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => ColumnFilters(column));
 }
 
 class $$UsernameTableTableOrderingComposer
@@ -729,6 +870,9 @@ class $$UsernameTableTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => ColumnOrderings(column));
 }
 
 class $$UsernameTableTableAnnotationComposer
@@ -748,6 +892,9 @@ class $$UsernameTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => column);
 }
 
 class $$UsernameTableTableTableManager extends RootTableManager<
@@ -779,21 +926,25 @@ class $$UsernameTableTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> username = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
           }) =>
               UsernameTableCompanion(
             id: id,
             username: username,
             createdAt: createdAt,
+            isFavorite: isFavorite,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String username,
             Value<DateTime?> createdAt = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
           }) =>
               UsernameTableCompanion.insert(
             id: id,
             username: username,
             createdAt: createdAt,
+            isFavorite: isFavorite,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -822,12 +973,14 @@ typedef $$PasswordTableTableCreateCompanionBuilder = PasswordTableCompanion
   Value<int> id,
   required String password,
   Value<DateTime?> createdAt,
+  Value<bool> isFavorite,
 });
 typedef $$PasswordTableTableUpdateCompanionBuilder = PasswordTableCompanion
     Function({
   Value<int> id,
   Value<String> password,
   Value<DateTime?> createdAt,
+  Value<bool> isFavorite,
 });
 
 class $$PasswordTableTableFilterComposer
@@ -847,6 +1000,9 @@ class $$PasswordTableTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => ColumnFilters(column));
 }
 
 class $$PasswordTableTableOrderingComposer
@@ -866,6 +1022,9 @@ class $$PasswordTableTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => ColumnOrderings(column));
 }
 
 class $$PasswordTableTableAnnotationComposer
@@ -885,6 +1044,9 @@ class $$PasswordTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => column);
 }
 
 class $$PasswordTableTableTableManager extends RootTableManager<
@@ -916,21 +1078,25 @@ class $$PasswordTableTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> password = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
           }) =>
               PasswordTableCompanion(
             id: id,
             password: password,
             createdAt: createdAt,
+            isFavorite: isFavorite,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String password,
             Value<DateTime?> createdAt = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
           }) =>
               PasswordTableCompanion.insert(
             id: id,
             password: password,
             createdAt: createdAt,
+            isFavorite: isFavorite,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -958,11 +1124,13 @@ typedef $$PinTableTableCreateCompanionBuilder = PinTableCompanion Function({
   Value<int> id,
   required String pin,
   Value<DateTime?> createdAt,
+  Value<bool> isFavorite,
 });
 typedef $$PinTableTableUpdateCompanionBuilder = PinTableCompanion Function({
   Value<int> id,
   Value<String> pin,
   Value<DateTime?> createdAt,
+  Value<bool> isFavorite,
 });
 
 class $$PinTableTableFilterComposer
@@ -982,6 +1150,9 @@ class $$PinTableTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => ColumnFilters(column));
 }
 
 class $$PinTableTableOrderingComposer
@@ -1001,6 +1172,9 @@ class $$PinTableTableOrderingComposer
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => ColumnOrderings(column));
 }
 
 class $$PinTableTableAnnotationComposer
@@ -1020,6 +1194,9 @@ class $$PinTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isFavorite => $composableBuilder(
+      column: $table.isFavorite, builder: (column) => column);
 }
 
 class $$PinTableTableTableManager extends RootTableManager<
@@ -1048,21 +1225,25 @@ class $$PinTableTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> pin = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
           }) =>
               PinTableCompanion(
             id: id,
             pin: pin,
             createdAt: createdAt,
+            isFavorite: isFavorite,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String pin,
             Value<DateTime?> createdAt = const Value.absent(),
+            Value<bool> isFavorite = const Value.absent(),
           }) =>
               PinTableCompanion.insert(
             id: id,
             pin: pin,
             createdAt: createdAt,
+            isFavorite: isFavorite,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

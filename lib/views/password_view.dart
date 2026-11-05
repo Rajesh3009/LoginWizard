@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loginwizard/provider/password_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/clipboard_service.dart';
 import '../utils/conts.dart';
+import '../utils/security_utils.dart';
 import 'password_history_view.dart';
 
 class PasswordView extends ConsumerStatefulWidget {
@@ -15,19 +17,37 @@ class PasswordView extends ConsumerStatefulWidget {
 }
 
 class _PasswordViewState extends ConsumerState<PasswordView>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _passwordLengthController = TextEditingController();
   final _passphraseLengthController = TextEditingController();
-  final _separatorController = TextEditingController();
-  String? _errorText;
-  late SharedPreferences _prefs;
-  Map<String, bool> _checkboxValues = {};
+  final _separatorController = TextEditingController(text: '-');
+  final _customExcludeController = TextEditingController();
+
+  int _passwordLength = 16;
+  int _passphraseLength = 4;
+  late SharedPreferencesAsync _prefs;
+
+  Map<String, bool> _checkboxValues = {
+    smallAlfaKey: true,
+    capAlfaKey: true,
+    numberskey: true,
+    specialCharsKey: true,
+    excludeAmbiguousKey: false,
+    passphraseCapitalizeKey: true,
+    passphraseNumbersKey: false,
+  };
 
   @override
   void initState() {
     super.initState();
+    _prefs = SharedPreferencesAsync();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
+    _passwordLengthController.text = '16';
+    _passphraseLengthController.text = '4';
     _loadSavedValues();
   }
 
@@ -35,104 +55,208 @@ class _PasswordViewState extends ConsumerState<PasswordView>
   void dispose() {
     _tabController.dispose();
     _saveValues();
+    _passwordLengthController.dispose();
     _passphraseLengthController.dispose();
     _separatorController.dispose();
+    _customExcludeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSavedValues() async {
+    final lower = await _prefs.getBool(smallAlfaKey) ?? true;
+    final upper = await _prefs.getBool(capAlfaKey) ?? true;
+    final num = await _prefs.getBool(numberskey) ?? true;
+    final sym = await _prefs.getBool(specialCharsKey) ?? true;
+    final ambig = await _prefs.getBool(excludeAmbiguousKey) ?? false;
+    final customEx = await _prefs.getString(customExcludeCharsKey) ?? '';
+    final passLenStr = await _prefs.getString(passwordLengthKey) ?? '16';
+    final phraseLenStr = await _prefs.getString(passphraseLengthKey) ?? '4';
+    final sep = await _prefs.getString(passphraseSeparatorKey) ?? '-';
+    final cap = await _prefs.getBool(passphraseCapitalizeKey) ?? true;
+    final phraseNum = await _prefs.getBool(passphraseNumbersKey) ?? false;
+
+    if (mounted) {
+      setState(() {
+        _checkboxValues = {
+          smallAlfaKey: lower,
+          capAlfaKey: upper,
+          numberskey: num,
+          specialCharsKey: sym,
+          excludeAmbiguousKey: ambig,
+          passphraseCapitalizeKey: cap,
+          passphraseNumbersKey: phraseNum,
+        };
+        _customExcludeController.text = customEx;
+        _passwordLength = int.tryParse(passLenStr) ?? 16;
+        _passwordLengthController.text = _passwordLength.toString();
+        _passphraseLength = int.tryParse(phraseLenStr) ?? 4;
+        _passphraseLengthController.text = _passphraseLength.toString();
+        _separatorController.text = sep;
+      });
+    }
+  }
+
+  Future<void> _saveValues() async {
+    await _prefs.setBool(smallAlfaKey, _checkboxValues[smallAlfaKey] ?? true);
+    await _prefs.setBool(capAlfaKey, _checkboxValues[capAlfaKey] ?? true);
+    await _prefs.setBool(numberskey, _checkboxValues[numberskey] ?? true);
+    await _prefs.setBool(specialCharsKey, _checkboxValues[specialCharsKey] ?? true);
+    await _prefs.setBool(excludeAmbiguousKey, _checkboxValues[excludeAmbiguousKey] ?? false);
+    await _prefs.setString(customExcludeCharsKey, _customExcludeController.text);
+    await _prefs.setString(passwordLengthKey, _passwordLength.toString());
+    await _prefs.setString(passphraseLengthKey, _passphraseLength.toString());
+    await _prefs.setString(passphraseSeparatorKey, _separatorController.text);
+    await _prefs.setBool(passphraseCapitalizeKey, _checkboxValues[passphraseCapitalizeKey] ?? true);
+    await _prefs.setBool(passphraseNumbersKey, _checkboxValues[passphraseNumbersKey] ?? false);
+  }
+
+  void _generate() {
+    _saveValues();
+    if (_tabController.index == 0) {
+      ref.read(passwordProvider.notifier).generatePassword(
+            length: _passwordLength,
+            includeLowercase: _checkboxValues[smallAlfaKey] ?? true,
+            includeUppercase: _checkboxValues[capAlfaKey] ?? true,
+            includeNumbers: _checkboxValues[numberskey] ?? true,
+            includeSymbols: _checkboxValues[specialCharsKey] ?? true,
+            excludeAmbiguous: _checkboxValues[excludeAmbiguousKey] ?? false,
+            customExclude: _customExcludeController.text,
+          );
+    } else {
+      ref.read(passwordProvider.notifier).generatePassphrase(
+            length: _passphraseLength,
+            separator: _separatorController.text,
+            capitalize: _checkboxValues[passphraseCapitalizeKey] ?? true,
+            includeNumber: _checkboxValues[passphraseNumbersKey] ?? false,
+          );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final password = ref.watch(passwordProvider);
+    final strength = SecurityUtils.evaluateStrength(password);
+
     return Scaffold(
       body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Result Display Card
             Card(
+              elevation: 3,
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
                   children: [
-                    Expanded(
-                        child: SelectableText(
-                      password,
-                      textAlign: TextAlign.center,
-                    )),
-                    IconButton(
-                      onPressed: () async {
-                        await Clipboard.setData(ClipboardData(text: password));
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Password copied to clipboard'),
-                              duration: Duration(seconds: 2),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SelectableText(
+                            password.isEmpty ? 'Tap Generate to create password' : password,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              letterSpacing: password.isEmpty ? 0 : 1.2,
+                              fontWeight: FontWeight.bold,
+                              color: password.isEmpty ? Colors.grey : null,
                             ),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.copy),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.copy),
+                          tooltip: 'Copy to clipboard',
+                          onPressed: password.isEmpty
+                              ? null
+                              : () => ClipboardService.copyToClipboard(
+                                    context,
+                                    password,
+                                    itemType: 'Password',
+                                  ),
+                        ),
+                      ],
                     ),
+                    if (password.isNotEmpty) ...[
+                      const Divider(height: 16),
+                      // Strength & Entropy Meter
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Strength: ${strength.label}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: strength.color,
+                            ),
+                          ),
+                          Text(
+                            '${strength.entropyBits.toStringAsFixed(1)} bits (${password.length} chars)',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (strength.entropyBits / 100).clamp(0.05, 1.0),
+                          backgroundColor: Colors.grey.withAlpha(50),
+                          valueColor: AlwaysStoppedAnimation<Color>(strength.color),
+                          minHeight: 6,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Estimated crack time: ${strength.crackTimeEstimate}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                fontStyle: FontStyle.italic,
+                              ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
             ),
-            if (password.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Length: ${password.length}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+            const SizedBox(height: 12),
+
+            // Tabs for Password vs Passphrase
             TabBar(
               controller: _tabController,
+              onTap: (_) => setState(() {}),
               tabs: const [
-                Tab(text: 'Password'),
-                Tab(text: 'Passphrase'),
+                Tab(icon: Icon(Icons.password), text: 'Password'),
+                Tab(icon: Icon(Icons.short_text), text: 'Passphrase'),
               ],
             ),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 200),
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: _passwordBuilder(),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: _passphraseBuilder(),
-                  ),
-                ],
+            const SizedBox(height: 12),
+
+            // Tab Content
+            if (_tabController.index == 0) _passwordBuilder() else _passphraseBuilder(),
+
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.refresh),
+              label: const Text('Generate Password', style: TextStyle(fontSize: 16)),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
+              onPressed: _generate,
             ),
-            SizedBox(height: 10),
-            ElevatedButton(
-                onPressed: () {
-                  if (_tabController.index == 0) {
-                    ref.read(passwordProvider.notifier).generatePassword(
-                        int.parse(_passwordLengthController.text),
-                        _checkboxValues[smallAlfaKey]!,
-                        _checkboxValues[capAlfaKey]!,
-                        _checkboxValues[numberskey]!,
-                        _checkboxValues[specialCharsKey]!);
-                  } else {
-                    ref.read(passwordProvider.notifier).generatePassphrase(
-                        int.parse(_passphraseLengthController.text),
-                        _separatorController.text,
-                        _checkboxValues[passphraseCapitalizeKey]!,
-                        _checkboxValues[passphraseNumbersKey]!);
-                  }
-                },
-                child: Text('Generate')),
-            SizedBox(height: 10),
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => PasswordHistoryView()));
-                },
-                child: Text('Password History')),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.history),
+              label: const Text('View Password History'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PasswordHistoryView()),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -141,182 +265,188 @@ class _PasswordViewState extends ConsumerState<PasswordView>
 
   Widget _passwordBuilder() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: _passwordLengthController,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+        // Length Slider & Input
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Password Length: $_passwordLength',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            SizedBox(
+              width: 60,
+              child: TextField(
+                controller: _passwordLengthController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(3),
+                ],
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                ),
+                onChanged: (val) {
+                  final parsed = int.tryParse(val);
+                  if (parsed != null && parsed >= 4 && parsed <= 128) {
+                    setState(() {
+                      _passwordLength = parsed;
+                    });
+                  }
+                },
+              ),
+            ),
           ],
-          decoration: InputDecoration(
-            labelText: 'Length (4-128)',
-            hintText: 'Enter the length of the password',
-            errorText: _errorText,
-          ),
-          onChanged: (value) {
-            if (value.isNotEmpty) {
-              int length = int.parse(value);
-              if (length < 4) {
-                setState(() => _errorText = 'Minimum length is 4');
-              } else if (length > 128) {
-                setState(() => _errorText = 'Maximum length is 128');
-              } else {
-                setState(() => _errorText = null);
-              }
-            }
+        ),
+        Slider(
+          value: _passwordLength.toDouble(),
+          min: 4,
+          max: 128,
+          divisions: 124,
+          label: '$_passwordLength',
+          onChanged: (val) {
+            setState(() {
+              _passwordLength = val.toInt();
+              _passwordLengthController.text = '$_passwordLength';
+            });
           },
         ),
-        SizedBox(height: 10),
-        Text('Select the options to include'),
+
+        const SizedBox(height: 8),
+        const Text('Character Sets:', style: TextStyle(fontWeight: FontWeight.w600)),
         Wrap(
-          runSpacing: 8,
-          spacing: 8,
+          spacing: 12,
+          runSpacing: 4,
           children: [
-            customCheckBox('A-Z', _checkboxValues[capAlfaKey] ?? false,
-                (bool value) {
-              setState(() {
-                _checkboxValues[capAlfaKey] = value;
-              });
-            }),
-            customCheckBox('a-z', _checkboxValues[smallAlfaKey] ?? false,
-                (bool value) {
-              setState(() {
-                _checkboxValues[smallAlfaKey] = value;
-              });
-            }),
-            customCheckBox('0-9', _checkboxValues[numberskey] ?? false,
-                (bool value) {
-              setState(() {
-                _checkboxValues[numberskey] = value;
-              });
-            }),
-            customCheckBox(r'!@#$*', _checkboxValues[specialCharsKey] ?? false,
-                (bool value) {
-              setState(() {
-                _checkboxValues[specialCharsKey] = value;
-              });
-            }),
+            _buildCheckbox('A-Z', capAlfaKey),
+            _buildCheckbox('a-z', smallAlfaKey),
+            _buildCheckbox('0-9', numberskey),
+            _buildCheckbox(r'!@#$%^&*', specialCharsKey),
           ],
-        )
+        ),
+
+        const SizedBox(height: 8),
+        const Text('Exclusions & Filters:', style: TextStyle(fontWeight: FontWeight.w600)),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          title: const Text('Exclude Ambiguous Characters (0, O, o, 1, l, I, |)'),
+          value: _checkboxValues[excludeAmbiguousKey] ?? false,
+          onChanged: (val) {
+            setState(() {
+              _checkboxValues[excludeAmbiguousKey] = val ?? false;
+            });
+            _saveValues();
+          },
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller: _customExcludeController,
+          decoration: const InputDecoration(
+            labelText: 'Custom Characters to Exclude',
+            hintText: r'e.g. "\ / ` ~',
+            isDense: true,
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (_) => _saveValues(),
+        ),
       ],
     );
   }
 
   Widget _passphraseBuilder() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: _passphraseLengthController,
-          keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(2),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Word Count: $_passphraseLength',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            SizedBox(
+              width: 50,
+              child: TextField(
+                controller: _passphraseLengthController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(2),
+                ],
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                ),
+                onChanged: (val) {
+                  final parsed = int.tryParse(val);
+                  if (parsed != null && parsed >= 2 && parsed <= 12) {
+                    setState(() {
+                      _passphraseLength = parsed;
+                    });
+                  }
+                },
+              ),
+            ),
           ],
-          decoration: InputDecoration(
-            labelText: 'Length (2-10)',
-            hintText: 'Enter the number of words',
-            errorText: _errorText,
-          ),
-          onChanged: (value) {
-            if (value.isNotEmpty) {
-              int length = int.parse(value);
-              if (length < 2) {
-                setState(() => _errorText = 'Minimum length is 2');
-              } else if (length > 10) {
-                setState(() => _errorText = 'Maximum length is 10');
-              } else {
-                setState(() => _errorText = null);
-              }
-            }
+        ),
+        Slider(
+          value: _passphraseLength.toDouble(),
+          min: 2,
+          max: 10,
+          divisions: 8,
+          label: '$_passphraseLength',
+          onChanged: (val) {
+            setState(() {
+              _passphraseLength = val.toInt();
+              _passphraseLengthController.text = '$_passphraseLength';
+            });
           },
         ),
+        const SizedBox(height: 8),
         TextField(
           controller: _separatorController,
-          decoration: InputDecoration(
-            labelText: 'Separator',
-            hintText: 'Enter the separator',
+          decoration: const InputDecoration(
+            labelText: 'Word Separator',
+            hintText: 'e.g. - or _ or .',
+            isDense: true,
+            border: OutlineInputBorder(),
           ),
+          onChanged: (_) => _saveValues(),
         ),
+        const SizedBox(height: 8),
         Wrap(
+          spacing: 12,
           children: [
-            customCheckBox(
-                'Capitalise', _checkboxValues[passphraseCapitalizeKey] ?? false,
-                (bool value) {
-              setState(() {
-                _checkboxValues[passphraseCapitalizeKey] = value;
-              });
-            }),
-            customCheckBox('Include number',
-                _checkboxValues[passphraseNumbersKey] ?? false, (bool value) {
-              setState(() {
-                _checkboxValues[passphraseNumbersKey] = value;
-              });
-            }),
+            _buildCheckbox('Capitalize Words', passphraseCapitalizeKey),
+            _buildCheckbox('Include Random Number', passphraseNumbersKey),
           ],
         ),
       ],
     );
   }
 
-  Widget customCheckBox(String text, bool value, Function(bool) onChanged) {
+  Widget _buildCheckbox(String label, String key) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Checkbox(
-          value: value,
-          onChanged: (bool? newValue) {
-            if (newValue != null) {
-              onChanged(newValue);
-            }
+          value: _checkboxValues[key] ?? false,
+          onChanged: (val) {
+            setState(() {
+              _checkboxValues[key] = val ?? false;
+            });
+            _saveValues();
           },
         ),
-        Text(text),
+        Flexible(child: Text(label)),
       ],
     );
-  }
-
-  // String? _validateLength() {
-  //   return _errorText;
-  // }
-
-  Future<void> _loadSavedValues() async {
-    _prefs = await SharedPreferences.getInstance();
-
-    setState(() {
-      _checkboxValues = {
-        smallAlfaKey: _prefs.getBool(smallAlfaKey) ?? false,
-        capAlfaKey: _prefs.getBool(capAlfaKey) ?? false,
-        numberskey: _prefs.getBool(numberskey) ?? false,
-        specialCharsKey: _prefs.getBool(specialCharsKey) ?? false,
-        passphraseCapitalizeKey:
-            _prefs.getBool(passphraseCapitalizeKey) ?? false,
-        passphraseNumbersKey: _prefs.getBool(passphraseNumbersKey) ?? false,
-      };
-      _passwordLengthController.text =
-          _prefs.getString(passwordLengthKey) ?? '4';
-
-      _passphraseLengthController.text =
-          _prefs.getString(passphraseLengthKey) ?? '2';
-      _separatorController.text =
-          _prefs.getString(passphraseSeparatorKey) ?? '';
-    });
-  }
-
-  Future<void> _saveValues() async {
-    //Password
-    await _prefs.setBool(smallAlfaKey, _checkboxValues[smallAlfaKey]!);
-    await _prefs.setBool(capAlfaKey, _checkboxValues[capAlfaKey]!);
-    await _prefs.setBool(numberskey, _checkboxValues[numberskey]!);
-    await _prefs.setBool(specialCharsKey, _checkboxValues[specialCharsKey]!);
-    await _prefs.setString(passwordLengthKey, _passwordLengthController.text);
-    //Passphrase
-    await _prefs.setBool(
-        passphraseCapitalizeKey, _checkboxValues[passphraseCapitalizeKey]!);
-    await _prefs.setBool(
-        passphraseNumbersKey, _checkboxValues[passphraseNumbersKey]!);
-    await _prefs.setString(
-        passphraseLengthKey, _passphraseLengthController.text);
-    await _prefs.setString(passphraseSeparatorKey, _separatorController.text);
   }
 }

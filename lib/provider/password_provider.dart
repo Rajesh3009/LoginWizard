@@ -1,10 +1,10 @@
-import 'dart:math';
-
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:word_generator/word_generator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../database/appdatabase.dart';
+import '../utils/conts.dart';
+import '../utils/security_utils.dart';
 
 final passwordProvider = StateNotifierProvider<PasswordProvider, String>((ref) {
   return PasswordProvider(ref);
@@ -22,61 +22,68 @@ final passwordHistoryProvider =
 
 class PasswordProvider extends StateNotifier<String> {
   final Ref ref;
+  final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
+
   PasswordProvider(this.ref) : super('');
 
-  void generatePassword(int length, bool includeLowercase,
-      bool includeUppercase, bool includeNumbers, bool includeSymbols) {
-    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
-    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const numbers = '0123456789';
-    const symbols = r'!@#\$%^&*()-_=+[]{}|;:,.<>?';
-
-    String chars = '';
-    if (includeLowercase) chars += lowercase;
-    if (includeUppercase) chars += uppercase;
-    if (includeNumbers) chars += numbers;
-    if (includeSymbols) chars += symbols;
-
-    if (chars.isEmpty) {
-      state = '';
-      return;
-    }
-
-    final ran = Random();
-    var password =
-        List.generate(length, (index) => chars[ran.nextInt(chars.length)])
-            .join();
+  Future<void> generatePassword({
+    required int length,
+    required bool includeLowercase,
+    required bool includeUppercase,
+    required bool includeNumbers,
+    required bool includeSymbols,
+    bool excludeAmbiguous = false,
+    String customExclude = '',
+  }) async {
+    final password = SecurityUtils.generatePassword(
+      length: length,
+      includeLowercase: includeLowercase,
+      includeUppercase: includeUppercase,
+      includeNumbers: includeNumbers,
+      includeSymbols: includeSymbols,
+      excludeAmbiguous: excludeAmbiguous,
+      customExclude: customExclude,
+    );
 
     state = password;
-    ref
-        .read(databaseProvider)
-        .into(ref.read(databaseProvider).passwordTable)
-        .insert(PasswordTableCompanion.insert(
-            password: state, createdAt: Value(DateTime.now())));
+
+    if (password.isNotEmpty) {
+      await _checkAndSave(password);
+    }
   }
 
-  void generatePassphrase(
-      int length, String separator, bool capitalize, bool includeNumber) {
-    final wordGenerator = WordGenerator();
-    List<String> words = wordGenerator.randomNouns(length);
+  Future<void> generatePassphrase({
+    required int length,
+    required String separator,
+    required bool capitalize,
+    required bool includeNumber,
+  }) async {
+    final passphrase = SecurityUtils.generatePassphrase(
+      wordCount: length,
+      separator: separator,
+      capitalize: capitalize,
+      includeNumber: includeNumber,
+    );
 
-    if (capitalize) {
-      words = words
-          .map((word) => word[0].toUpperCase() + word.substring(1))
-          .toList();
+    state = passphrase;
+
+    if (passphrase.isNotEmpty) {
+      await _checkAndSave(passphrase);
     }
+  }
 
-    if (includeNumber) {
-      final ran = Random();
-      words.add(ran.nextInt(100).toString());
+  Future<void> _checkAndSave(String value) async {
+    final autoSave = await _prefs.getBool(autoSaveHistoryKey) ?? true;
+    if (autoSave) {
+      final db = ref.read(databaseProvider);
+      await db.into(db.passwordTable).insert(
+            PasswordTableCompanion.insert(
+              password: value,
+              createdAt: Value(DateTime.now()),
+              isFavorite: const Value(false),
+            ),
+          );
+      ref.invalidate(passwordHistoryProvider);
     }
-
-    words.shuffle();
-    state = words.join(separator);
-    ref
-        .read(databaseProvider)
-        .into(ref.read(databaseProvider).passwordTable)
-        .insert(PasswordTableCompanion.insert(
-            password: state, createdAt: Value(DateTime.now())));
   }
 }
